@@ -1,8 +1,10 @@
 use clap::{Parser,Subcommand};
 use std::thread;
 mod pdf_test;
+mod file_test;
 
 use pdf_test::extract_pdf;
+use file_test::parse_directory;
 
 #[derive(Parser)]
 #[command(name= "docsearch", about= "Document Search")]
@@ -20,7 +22,9 @@ enum Command{
 
     Init,
 
-    Test
+    Test,
+
+    TestDir
 }
 
 
@@ -54,6 +58,11 @@ fn main() {
                 }
             };
 
+        }
+
+
+        Command::TestDir => {
+            parse_directory();
         }
     }
 }
