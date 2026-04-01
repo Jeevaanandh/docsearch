@@ -44,7 +44,15 @@ fn main() {
 
 
         Command::Test => {
-            extract_pdf("testFile.pdf");
+            match extract_pdf("testFile.pdf"){
+                Ok(_) => {
+                    println!("Successfully extracted the PDF");
+                }
+
+                Err(_) =>{
+                    println!("Error occured");
+                }
+            };
 
         }
     }

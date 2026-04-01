@@ -7,3 +7,4 @@ edition = "2024"
 clap = { version = "4", features = ["derive"]}
 pdf-extract = "0.7"
 fastembed = "5"
+dirs = "5"
