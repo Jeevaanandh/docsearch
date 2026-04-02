@@ -32,9 +32,6 @@ pub fn parse_directory(){
                 
 
                 }
-                
-
-            
 
             });
 
