@@ -1,10 +1,11 @@
 use clap::{Parser,Subcommand};
-use std::thread;
 mod pdf_test;
 mod file_test;
+mod repository;
 
 use pdf_test::extract_pdf;
 use file_test::parse_directory;
+use crate::repository::db::db_init;
 
 #[derive(Parser)]
 #[command(name= "docsearch", about= "Document Search")]
@@ -27,19 +28,14 @@ enum Command{
     TestDir
 }
 
-
-fn main() {
+#[tokio::main]
+async fn main() {
     let args= Args::parse();
 
     match args.command{
         Command::Search{prompt} =>{
             println!("Prompt: {}", prompt);
 
-            let handle = thread::spawn(|| {
-                println!("Hello from Thread!!");
-            });
-
-            handle.join().unwrap();
         }
 
         Command::Init =>{
@@ -48,13 +44,25 @@ fn main() {
 
 
         Command::Test => {
-            match extract_pdf("testFile.pdf"){
+            let pool = match db_init().await{
+                        Ok(p) => p,
+
+                        Err(_) =>{
+                            println!("ERROR");
+                            return
+                        }
+
+                
+
+                    };
+
+            match extract_pdf("testFile.pdf", &pool).await{
                 Ok(_) => {
                     println!("Successfully extracted the PDF");
                 }
 
-                Err(_) =>{
-                    println!("Error occured");
+                Err(e) =>{
+                    println!("Error occured {}", e);
                 }
             };
 
@@ -62,7 +70,18 @@ fn main() {
 
 
         Command::TestDir => {
-            parse_directory();
+                    let pool = match db_init().await{
+                        Ok(p) => p,
+
+                        Err(_) =>{
+                            println!("ERROR");
+                            return
+                        }
+
+                
+
+                    };
+            parse_directory(&pool).await;
         }
     }
 }
