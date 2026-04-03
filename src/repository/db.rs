@@ -63,3 +63,13 @@ pub async fn search_db(pool: &SqlitePool) -> Result<(Vec<String>, Vec<Vec<f32>>)
 
     Ok((paths, embeddings))
 }
+
+pub async fn get_paths(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT path FROM embeddings")
+        .fetch_all(pool)
+        .await?;
+
+    let paths = rows.into_iter().map(|(p,)| p).collect();
+
+    Ok(paths)
+}

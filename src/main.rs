@@ -5,7 +5,7 @@ mod repository;
 mod search;
 
 use crate::repository::db::db_init;
-use file_test::parse_directory;
+use file_test::{check_diff, parse_directory};
 use pdf_test::extract_pdf;
 use search::search;
 
@@ -25,6 +25,8 @@ enum Command {
     Test,
 
     TestDir,
+
+    Sync,
 }
 
 #[tokio::main]
@@ -82,6 +84,19 @@ async fn main() {
                 }
             };
             parse_directory(&pool).await;
+        }
+
+        Command::Sync => {
+            let pool = match db_init().await {
+                Ok(p) => p,
+
+                Err(_) => {
+                    println!("ERROR");
+                    return;
+                }
+            };
+
+            check_diff(&pool).await;
         }
     }
 }
