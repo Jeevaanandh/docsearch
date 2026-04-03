@@ -11,3 +11,4 @@ dirs = "5"
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-native-tls", "macros"] }
 tokio = { version = "1", features = ["full"] }
 bytemuck = "1.14"
+faiss = "0.13.0"
