@@ -56,8 +56,12 @@ pub async fn search(prompt: &str, pool: &SqlitePool) {
     };
 
     let mut counter = 0;
-    println!("----------TOP RESULTS----------");
+    println!("\n----------TOP RESULTS----------\n");
     for i in faiss_result.labels {
+        if faiss_result.distances[counter] >= 1.0 {
+            counter += 1;
+            continue;
+        }
         let ind = i.to_native() as usize;
         println!(
             "{}) {}, Distance: {:.2}",
