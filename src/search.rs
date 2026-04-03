@@ -11,6 +11,8 @@ fn faiss_impl(
     embeddings: &Vec<Vec<f32>>,
     prompt_embedding: &Vec<f32>,
 ) -> Result<SearchResult<f32>, faiss::error::Error> {
+    let len = embeddings.len();
+    let n_res = len % 10;
     let dim = embeddings[0].len();
     let mut index = index_factory(dim as u32, "Flat", MetricType::L2)?;
 
@@ -18,7 +20,7 @@ fn faiss_impl(
 
     index.add(&flat)?;
 
-    let result = index.search(prompt_embedding, 1)?;
+    let result = index.search(prompt_embedding, n_res)?;
 
     Ok(result)
 }
@@ -53,8 +55,16 @@ pub async fn search(prompt: &str, pool: &SqlitePool) {
         }
     };
 
-    let best_index = faiss_result.labels[0].to_native() as usize;
-
-    println!("Best match index: {}", best_index);
-    println!("Best Match: {}", paths[best_index]);
+    let mut counter = 0;
+    println!("----------TOP RESULTS----------");
+    for i in faiss_result.labels {
+        let ind = i.to_native() as usize;
+        println!(
+            "{}) {}, Distance: {:.2}",
+            counter + 1,
+            paths[ind],
+            faiss_result.distances[counter]
+        );
+        counter += 1;
+    }
 }
