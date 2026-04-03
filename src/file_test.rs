@@ -20,6 +20,7 @@ pub async fn check_diff(pool: &SqlitePool) {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
         let file_name = file_name_buf.to_str().unwrap().to_string();
+
         if !files.contains(&file_name) {
             match extract_pdf(&file_name, pool).await {
                 Ok(_) => {

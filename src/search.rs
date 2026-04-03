@@ -12,7 +12,7 @@ fn faiss_impl(
     prompt_embedding: &Vec<f32>,
 ) -> Result<SearchResult<f32>, faiss::error::Error> {
     let len = embeddings.len();
-    let n_res = len % 10;
+    let n_res = len.min(10);
     let dim = embeddings[0].len();
     let mut index = index_factory(dim as u32, "Flat", MetricType::L2)?;
 
@@ -49,8 +49,8 @@ pub async fn search(prompt: &str, pool: &SqlitePool) {
     let faiss_result = match faiss_impl(&embeddings, &avg_emb_prompt) {
         Ok(res) => res,
 
-        Err(_) => {
-            println!("Error in Faiss");
+        Err(e) => {
+            println!("Error in Faiss: {}", e);
             return;
         }
     };

@@ -24,8 +24,6 @@ enum Command {
 
     Test,
 
-    TestDir,
-
     Sync,
 }
 
@@ -46,10 +44,6 @@ async fn main() {
             };
 
             search(&prompt, &pool).await;
-        }
-
-        Command::Init => {
-            println!("init was run");
         }
 
         Command::Test => {
@@ -74,7 +68,7 @@ async fn main() {
             };
         }
 
-        Command::TestDir => {
+        Command::Init => {
             let pool = match db_init().await {
                 Ok(p) => p,
 
