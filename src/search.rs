@@ -25,13 +25,13 @@ fn faiss_impl(
     Ok(result)
 }
 
-pub async fn search(prompt: &str, pool: &SqlitePool) {
+pub async fn search(prompt: &str, pool: &SqlitePool) -> Vec<String> {
     let (paths, embeddings) = match search_db(pool).await {
         Ok(res) => res,
 
         Err(e) => {
             println!("Error in DB search: {}", e);
-            return;
+            return Vec::new();
         }
     };
 
@@ -40,7 +40,7 @@ pub async fn search(prompt: &str, pool: &SqlitePool) {
 
         Err(_) => {
             println!("Error in getting the embedding");
-            return;
+            return Vec::new();
         }
     };
 
@@ -51,24 +51,22 @@ pub async fn search(prompt: &str, pool: &SqlitePool) {
 
         Err(e) => {
             println!("Error in Faiss: {}", e);
-            return;
+            return Vec::new();
         }
     };
 
     let mut counter = 0;
-    println!("\n----------TOP RESULTS----------\n");
+    let mut result: Vec<String> = Vec::new();
     for i in faiss_result.labels {
         if faiss_result.distances[counter] >= 1.0 {
             counter += 1;
             continue;
         }
         let ind = i.to_native() as usize;
-        println!(
-            "{}) {}, Distance: {:.2}",
-            counter + 1,
-            paths[ind],
-            faiss_result.distances[counter]
-        );
+        result.push(paths[ind].clone());
+
         counter += 1;
     }
+
+    result
 }
