@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 mod app;
 mod file_test;
+mod open_file;
 mod pdf_test;
 mod repository;
 mod search;

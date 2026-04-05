@@ -1,4 +1,5 @@
-use crate::App;
+use crate::open_file::open;
+use crate::{App, open_file};
 
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -112,6 +113,7 @@ pub fn run_app<B: ratatui::backend::Backend>(
                             return Ok(());
                         }
                         // Here you could handle other menu selections
+                        open(&app.get_selected_option());
                     }
                     _ => {}
                 }

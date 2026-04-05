@@ -71,4 +71,3 @@ pub async fn parse_directory(pool: &SqlitePool) {
         i.await.unwrap();
     }
 }
-
