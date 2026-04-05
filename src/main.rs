@@ -9,22 +9,14 @@ mod search;
 use crate::repository::db::db_init;
 use app::run_app;
 use file_test::{check_diff, parse_directory};
-use pdf_test::extract_pdf;
 use search::search;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{
-    Terminal,
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
-};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
 #[derive(Parser)]

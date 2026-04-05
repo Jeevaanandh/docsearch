@@ -1,14 +1,9 @@
+use crate::App;
 use crate::open_file::open;
-use crate::{App, open_file};
 
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
-};
+use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     Terminal,
-    backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -113,7 +108,7 @@ pub fn run_app<B: ratatui::backend::Backend>(
                             return Ok(());
                         }
                         // Here you could handle other menu selections
-                        open(&app.get_selected_option());
+                        open(app.get_selected_option());
                     }
                     _ => {}
                 }
