@@ -3,6 +3,7 @@ mod app;
 mod file_test;
 mod open_file;
 mod pdf_test;
+mod ppt_test;
 mod repository;
 mod search;
 

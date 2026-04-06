@@ -6,6 +6,8 @@ use tokio::task;
 use crate::pdf_test::extract_pdf;
 use crate::repository::db::get_paths;
 
+use crate::ppt_test::parse_ppt;
+
 pub async fn check_diff(pool: &SqlitePool) {
     let files = match get_paths(pool).await {
         Ok(paths) => paths,
@@ -46,10 +48,24 @@ pub async fn parse_directory(pool: &SqlitePool) {
 
         if !file_name.starts_with(".")
             && entry.file_type().unwrap().is_file()
-            && (file_name.ends_with(".pdf"))
+            && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
         {
             let path_str = entry.path().to_string_lossy().to_string();
             let pool = pool.clone();
+
+            if file_name.ends_with(".pptx") {
+                match parse_ppt(&path_str, &pool).await {
+                    Ok(_) => {
+                        println!("{} was a Success!", path_str);
+                    }
+
+                    Err(e) => {
+                        println!("{} failed. Error: {}", path_str, e);
+                    }
+                };
+
+                continue;
+            }
 
             let handle = task::spawn(async move {
                 match extract_pdf(&path_str, &pool).await {

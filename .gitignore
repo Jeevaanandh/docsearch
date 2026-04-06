@@ -1,4 +1,5 @@
 /target 
 .git
 /src/testFile.pdf
-
+.DS_Store
+/src/DS_Store
