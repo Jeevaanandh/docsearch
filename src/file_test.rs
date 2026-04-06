@@ -46,7 +46,7 @@ pub async fn parse_directory(pool: &SqlitePool) {
 
         if !file_name.starts_with(".")
             && entry.file_type().unwrap().is_file()
-            && file_name.ends_with(".pdf")
+            && (file_name.ends_with(".pdf"))
         {
             let path_str = entry.path().to_string_lossy().to_string();
             let pool = pool.clone();

@@ -50,10 +50,11 @@ pub async fn extract_pdf(file: &str, pool: &SqlitePool) -> Result<(), Box<dyn st
     let text = pdf_extract::extract_text(file)?;
     let text = text.replace('\u{00A0}', " ");
 
-    let embeddings = get_embedding(&text)?;
+    if text.len() == 0 {
+        return Ok(());
+    }
 
-    println!("Embeddings length: {}", embeddings.len());
-    println!("Embedding dimension: {}", embeddings[0].len());
+    let embeddings = get_embedding(&text)?;
 
     //This has to be added to the db with the file name as the primary key.
     let avg_embeddings = average_embedding(&embeddings);

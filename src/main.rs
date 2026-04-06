@@ -19,22 +19,6 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
-#[derive(Parser)]
-#[command(name = "docsearch", about = "Document Search")]
-struct Args {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand)]
-enum Command {
-    Search { prompt: String },
-
-    Init,
-
-    Sync,
-}
-
 pub struct App {
     options: Vec<String>,
     selected: usize,
@@ -63,6 +47,22 @@ impl App {
     fn get_selected_option(&self) -> &str {
         &self.options[self.selected]
     }
+}
+
+#[derive(Parser)]
+#[command(name = "docsearch", about = "Document Search")]
+struct Args {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    Search { prompt: String },
+
+    Init,
+
+    Sync,
 }
 
 fn setup_app(app: &mut App) -> Result<(), io::Error> {
