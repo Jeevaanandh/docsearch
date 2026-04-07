@@ -24,6 +24,22 @@ pub async fn check_diff(pool: &SqlitePool) {
         let file_name = file_name_buf.to_str().unwrap().to_string();
 
         if !files.contains(&file_name) {
+            if file_name.ends_with(".pptx") {
+                match parse_ppt(&file_name, pool).await {
+                    Ok(_) => {
+                        println!("{} was added Successfully!", file_name);
+                    }
+
+                    Err(_) => {
+                        println!("Error adding: {}", file_name);
+                    }
+                }
+
+                continue;
+            }
+            if !file_name.ends_with(".pdf") {
+                continue;
+            }
             match extract_pdf(&file_name, pool).await {
                 Ok(_) => {
                     println!("{} added Successfully!!", file_name);
