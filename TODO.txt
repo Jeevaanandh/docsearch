@@ -1,0 +1,2 @@
+1. Add the logic to check for deleted files in sync and delete them in the DB.
+

@@ -4,7 +4,7 @@ use sqlx::SqlitePool;
 use tokio::task;
 
 use crate::pdf_test::extract_pdf;
-use crate::repository::db::get_paths;
+use crate::repository::db::{delete_path, get_paths};
 
 use crate::ppt_test::parse_ppt;
 
@@ -18,10 +18,18 @@ pub async fn check_diff(pool: &SqlitePool) {
         }
     };
 
+    let mut cur_files: Vec<String> = Vec::new();
+
     for entry_res in read_dir(".").unwrap() {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
         let file_name = file_name_buf.to_str().unwrap().to_string();
+
+        let file_clone = file_name.clone();
+
+        if file_clone.ends_with(".pdf") || file_clone.ends_with(".pptx") {
+            cur_files.push(file_clone);
+        }
 
         if !files.contains(&file_name) {
             if file_name.ends_with(".pptx") {
@@ -42,11 +50,38 @@ pub async fn check_diff(pool: &SqlitePool) {
             }
             match extract_pdf(&file_name, pool).await {
                 Ok(_) => {
-                    println!("{} added Successfully!!", file_name);
+                    &println!("{} added Successfully!!", file_name);
                 }
 
                 Err(_) => {
                     println!("Error in adding {} from diff", file_name);
+                }
+            };
+        }
+    }
+
+    check_deletions(&cur_files, pool).await;
+}
+
+async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
+    let db_paths = match get_paths(pool).await {
+        Ok(paths) => paths,
+
+        Err(e) => {
+            println!("Error in getting db paths (diff): {}", e);
+            return;
+        }
+    };
+
+    for i in db_paths {
+        if !cur_files.contains(&i) {
+            match delete_path(&i, pool).await {
+                Ok(_) => {
+                    println!("{} was deleted Successfully!", i);
+                }
+
+                Err(e) => {
+                    println!("Delete Failed for: {}, Reason: {}", i, e);
                 }
             };
         }

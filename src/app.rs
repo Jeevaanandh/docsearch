@@ -35,6 +35,7 @@ pub fn run_app<B: ratatui::backend::Backend>(
                         .add_modifier(Modifier::BOLD),
                 )
                 .block(Block::default().borders(Borders::ALL).title("DocSearch"));
+
             f.render_widget(title, chunks[0]);
 
             // Menu items

@@ -83,8 +83,6 @@ pub async fn parse_ppt(
 
     let avg_embeddings = average_embedding(&embeddings);
 
-    println!("{}: {}", filename, text);
-
     add_embedding(pool, filename, &avg_embeddings).await?;
 
     Ok(())

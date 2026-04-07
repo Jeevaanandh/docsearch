@@ -73,3 +73,12 @@ pub async fn get_paths(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
 
     Ok(paths)
 }
+
+pub async fn delete_path(path: &str, pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM embeddings WHERE path= ?")
+        .bind(path)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
