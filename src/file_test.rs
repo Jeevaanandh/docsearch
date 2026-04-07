@@ -31,7 +31,6 @@ pub async fn check_diff(pool: &SqlitePool) {
 
                 Err(_) => {
                     println!("Error in adding {} from diff", file_name);
-                    return;
                 }
             };
         }
