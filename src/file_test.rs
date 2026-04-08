@@ -20,6 +20,7 @@ pub async fn check_diff(pool: &SqlitePool) {
 
     let mut cur_files: Vec<String> = Vec::new();
 
+    let mut handles = Vec::new();
     for entry_res in read_dir(".").unwrap() {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
@@ -33,31 +34,50 @@ pub async fn check_diff(pool: &SqlitePool) {
 
         if !files.contains(&file_name) {
             if file_name.ends_with(".pptx") {
-                match parse_ppt(&file_name, pool).await {
-                    Ok(_) => {
-                        println!("{} was added Successfully!", file_name);
-                    }
+                let p = pool.clone();
+                let f = file_name.clone();
 
-                    Err(_) => {
-                        println!("Error adding: {}", file_name);
+                let handle = task::spawn(async move {
+                    match parse_ppt(&f, &p).await {
+                        Ok(_) => {
+                            println!("{} was added Succseefully", f);
+                        }
+
+                        Err(_) => {
+                            println!("Error in adding: {}", f);
+                        }
                     }
-                }
+                });
+
+                handles.push(handle);
 
                 continue;
             }
             if !file_name.ends_with(".pdf") {
                 continue;
             }
-            match extract_pdf(&file_name, pool).await {
-                Ok(_) => {
-                    println!("{} added Successfully!!", file_name);
-                }
 
-                Err(_) => {
-                    println!("Error in adding {} from diff", file_name);
+            let p = pool.clone();
+            let f = file_name.clone();
+
+            let handle = task::spawn(async move {
+                match extract_pdf(&f, &p).await {
+                    Ok(_) => {
+                        println!("{} was added Successfully!", f);
+                    }
+
+                    Err(_) => {
+                        println!("Error in adding {}", f);
+                    }
                 }
-            };
+            });
+
+            handles.push(handle);
         }
+    }
+
+    for i in handles {
+        i.await.unwrap();
     }
 
     check_deletions(&cur_files, pool).await;
