@@ -36,7 +36,11 @@ fn bytes_to_vec_f32(bytes: &[u8]) -> Vec<f32> {
         .collect()
 }
 
-pub async fn add_embedding(pool: &SqlitePool, path: &str, embedding: &Vec<f32>) -> Result<()> {
+pub async fn add_embedding(
+    pool: &SqlitePool,
+    path: &str,
+    embedding: &Vec<f32>,
+) -> Result<(), sqlx::Error> {
     let bytes = vec_to_bytes(&embedding);
 
     sqlx::query("INSERT OR REPLACE INTO embeddings (path, embedding) VALUES (?, ?)")

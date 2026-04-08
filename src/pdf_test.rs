@@ -48,6 +48,7 @@ pub fn get_embedding(text: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Er
 pub async fn extract_pdf(file: &str, pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     //Extracting the text contents from the PDF
     let text = pdf_extract::extract_text(file)?;
+
     let text = text.replace('\u{00A0}', " ");
 
     if text.len() == 0 {
@@ -59,7 +60,7 @@ pub async fn extract_pdf(file: &str, pool: &SqlitePool) -> Result<(), Box<dyn st
     //This has to be added to the db with the file name as the primary key.
     let avg_embeddings = average_embedding(&embeddings);
 
-    add_embedding(&pool, file, &avg_embeddings).await?;
+    add_embedding(pool, file, &avg_embeddings).await?;
 
     Ok(())
 }

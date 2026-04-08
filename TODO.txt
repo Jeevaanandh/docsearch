@@ -1,2 +1,12 @@
+(RESOLVED)
 1. Add the logic to check for deleted files in sync and delete them in the DB.
 
+2. Add a way to embed only a single specified file from the current directory.
+
+3. Resolve the error with the pdf reader. (Do error handling)
+
+4. Use multithreading in pdf/ppt processing ----- use 1 thread for every 20 files?
+	For this, make changes to parse_directory() in file_test.rs and check diff.
+	* Create a vector of strings to store the file names. Once the len of the vector is 20, create a thread, to run a 	      function (extract_ content())
+	* This function will go through all the item in the list and call extract_pdf() or parse_ppt().
+	* The thread will handle the embeddings part. Then, clear the vector and go to the next 20.

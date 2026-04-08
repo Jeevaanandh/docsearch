@@ -50,7 +50,7 @@ pub async fn check_diff(pool: &SqlitePool) {
             }
             match extract_pdf(&file_name, pool).await {
                 Ok(_) => {
-                    &println!("{} added Successfully!!", file_name);
+                    println!("{} added Successfully!!", file_name);
                 }
 
                 Err(_) => {
