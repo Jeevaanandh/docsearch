@@ -9,7 +9,7 @@ mod search;
 
 use crate::repository::db::db_init;
 use app::run_app;
-use file_test::{check_diff, parse_directory};
+use file_test::{check_diff, parse_directory, parse_directory2};
 use search::search;
 
 use crossterm::{

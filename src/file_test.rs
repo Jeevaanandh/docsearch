@@ -108,6 +108,96 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
     }
 }
 
+//Tried doing something, found out it was worse than before
+
+async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
+    let mut handles = Vec::new();
+    for file in files {
+        let f = file.clone();
+        let p = pool.clone();
+
+        if file.ends_with(".pdf") {
+            let handle = task::spawn(async move {
+                match extract_pdf(&f, &p).await {
+                    Ok(_) => {
+                        println!("{} was a Success!", f);
+                    }
+
+                    Err(e) => {
+                        println!("{} Failed {}", f, e);
+                    }
+                }
+            });
+
+            handles.push(handle);
+        } else {
+            let handle = task::spawn(async move {
+                match parse_ppt(&f, &p).await {
+                    Ok(_) => {
+                        println!("{} was a Success!", f);
+                    }
+
+                    Err(e) => {
+                        println!("{} Failed {}", f, e);
+                    }
+                }
+            });
+
+            handles.push(handle);
+        }
+    }
+
+    for i in handles {
+        i.await.unwrap();
+    }
+}
+
+pub async fn parse_directory2(pool: &SqlitePool) {
+    let mut files: Vec<String> = Vec::new();
+    let mut handles = Vec::new();
+
+    for entry_res in read_dir(".").unwrap() {
+        let entry = entry_res.unwrap();
+        let file_name_buf = entry.file_name();
+        let file_name = file_name_buf.to_str().unwrap();
+
+        if !file_name.starts_with(".")
+            && entry.file_type().unwrap().is_file()
+            && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
+        {
+            files.push(file_name.to_string());
+
+            if files.len() == 10 {
+                let p = pool.clone();
+                let fls = files.clone();
+
+                let handle = task::spawn(async move {
+                    process_file(&fls, &p).await;
+                });
+
+                handles.push(handle);
+
+                files = Vec::new();
+            }
+        }
+    }
+
+    if !files.is_empty() {
+        let p = pool.clone();
+        let fls = files.clone();
+
+        let handle = task::spawn(async move {
+            process_file(&fls, &p).await;
+        });
+
+        handles.push(handle);
+    }
+
+    for i in handles {
+        i.await.unwrap();
+    }
+}
+
 pub async fn parse_directory(pool: &SqlitePool) {
     let mut handles = Vec::new();
 
@@ -124,15 +214,19 @@ pub async fn parse_directory(pool: &SqlitePool) {
             let pool = pool.clone();
 
             if file_name.ends_with(".pptx") {
-                match parse_ppt(&path_str, &pool).await {
-                    Ok(_) => {
-                        println!("{} was a Success!", path_str);
-                    }
+                let handle = task::spawn(async move {
+                    match parse_ppt(&path_str, &pool).await {
+                        Ok(_) => {
+                            println!("{} was a Success!", path_str);
+                        }
 
-                    Err(e) => {
-                        println!("{} failed. Error: {}", path_str, e);
+                        Err(e) => {
+                            println!("{} failed. Error: {}", path_str, e);
+                        }
                     }
-                };
+                });
+
+                handles.push(handle);
 
                 continue;
             }

@@ -19,6 +19,10 @@ pub async fn db_init() -> Result<SqlitePool> {
     .execute(&pool)
     .await?;
 
+    sqlx::query("PRAGMA journal_mode = WAL")
+        .execute(&pool)
+        .await?;
+
     Ok(pool)
 }
 
