@@ -28,7 +28,10 @@ pub async fn check_diff(pool: &SqlitePool) {
 
         let file_clone = file_name.clone();
 
-        if file_clone.ends_with(".pdf") || file_clone.ends_with(".pptx") {
+        if !file_name.starts_with(".")
+            && entry.file_type().unwrap().is_file()
+            && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
+        {
             cur_files.push(file_clone);
         }
 
