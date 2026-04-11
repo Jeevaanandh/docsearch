@@ -1,7 +1,6 @@
 use crate::pdf_test::{average_embedding, get_embedding};
 use crate::repository::db::search_db;
 use dirs;
-use fastembed::{EmbeddingModel, Error, InitOptions, TextEmbedding};
 use sqlx::SqlitePool;
 use std::result::Result;
 
