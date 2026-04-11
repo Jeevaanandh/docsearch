@@ -1,6 +1,6 @@
 use crate::repository::db::add_embedding;
 use dirs;
-use fastembed::{EmbeddingModel, Error, InitOptions, TextEmbedding};
+use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use pdf_extract;
 use sqlx::SqlitePool;
 
@@ -45,9 +45,14 @@ pub fn get_embedding(text: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Er
     Ok(embeddings)
 }
 
-pub async fn extract_pdf(file: &str, pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn extract_pdf(
+    cur_dir: &str,
+    filename: &str,
+    filepath: &str,
+    pool: &SqlitePool,
+) -> Result<(), Box<dyn std::error::Error>> {
     //Extracting the text contents from the PDF
-    let text = pdf_extract::extract_text(file)?;
+    let text = pdf_extract::extract_text(filepath)?;
 
     let text = text.replace('\u{00A0}', " ");
 
@@ -60,7 +65,7 @@ pub async fn extract_pdf(file: &str, pool: &SqlitePool) -> Result<(), Box<dyn st
     //This has to be added to the db with the file name as the primary key.
     let avg_embeddings = average_embedding(&embeddings);
 
-    add_embedding(pool, file, &avg_embeddings).await?;
+    add_embedding(pool, filename, filepath, &avg_embeddings, cur_dir).await?;
 
     Ok(())
 }

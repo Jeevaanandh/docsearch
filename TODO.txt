@@ -5,8 +5,29 @@
 
 3. Resolve the error with the pdf reader. (Do error handling)
 
+(NO NEED FOR THIS, tokio HAS MULTIPLE THREADS IN ITS THREAD POOL)
 4. Use multithreading in pdf/ppt processing ----- use 1 thread for every 20 files?
 	For this, make changes to parse_directory() in file_test.rs and check diff.
 	* Create a vector of strings to store the file names. Once the len of the vector is 20, create a thread, to run a 	      function (extract_ content())
 	* This function will go through all the item in the list and call extract_pdf() or parse_ppt().
 	* The thread will handle the embeddings part. Then, clear the vector and go to the next 20.
+
+
+5. Make this like a directory watcher. Users can mention what directories to watch (ie. init).
+After init is done, embed the existing files then, embed just files that are added (this can be done by directory watching). This removes the need for sync.
+
+So,
+When init is run ----- A daemon shoud be created. This runs the parse_directory() as usual. Once that is done, the watcher should be started (to watch the directory where init was run) 
+
+* The daemon sould not be created everytime init is run ------ Start one daemon process from then on, communtication should be done via IPC with the existing daemon.
+
+* The daemon runs two async tasks.
+	i) Socket listner ----- listens for messages
+	ii) Watcher ------ Directory Watcher.
+
+* Use the daemonize crate 
+
+* daemonize.start() ----- automatically creates a new background process.
+
+
+

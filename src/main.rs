@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+
 mod app;
 mod file_test;
 mod open_file;
@@ -6,10 +7,11 @@ mod pdf_test;
 mod ppt_test;
 mod repository;
 mod search;
+mod watcher;
 
 use crate::repository::db::db_init;
 use app::run_app;
-use file_test::{check_diff, parse_directory, parse_directory2};
+use file_test::{check_diff, parse_directory};
 use search::search;
 
 use crossterm::{
@@ -21,32 +23,34 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
 pub struct App {
-    options: Vec<String>,
+    files: Vec<String>,
+    filepaths: Vec<String>,
     selected: usize,
 }
 
 impl App {
-    fn new(results: Vec<String>) -> App {
+    fn new(results: (Vec<String>, Vec<String>)) -> App {
         App {
-            options: results,
+            files: results.0,
+            filepaths: results.1,
             selected: 0,
         }
     }
 
     fn next(&mut self) {
-        self.selected = (self.selected + 1) % self.options.len();
+        self.selected = (self.selected + 1) % self.files.len();
     }
 
     fn previous(&mut self) {
         if self.selected > 0 {
             self.selected -= 1;
         } else {
-            self.selected = self.options.len() - 1;
+            self.selected = self.files.len() - 1;
         }
     }
 
     fn get_selected_option(&self) -> &str {
-        &self.options[self.selected]
+        &self.filepaths[self.selected]
     }
 }
 
@@ -107,13 +111,17 @@ async fn main() {
             };
 
             let result = search(&prompt, &pool).await;
+            let result2 = result.clone();
 
-            if result.len() == 0 {
+            let files = result.0;
+            let filepaths = result.1;
+
+            if files.len() == 0 || filepaths.len() == 0 {
                 println!("No Results Found!");
                 return;
             }
 
-            let mut app: App = App::new(result);
+            let mut app: App = App::new(result2);
             match setup_app(&mut app) {
                 Ok(_) => {
                     return;
@@ -135,7 +143,7 @@ async fn main() {
                     return;
                 }
             };
-            parse_directory2(&pool).await;
+            parse_directory(&pool).await;
         }
 
         Command::Sync => {

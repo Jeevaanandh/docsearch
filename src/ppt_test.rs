@@ -74,7 +74,9 @@ fn extract_text_from_xml(xml: &str) -> Result<String, Box<dyn std::error::Error>
 }
 
 pub async fn parse_ppt(
+    current_dir: &str,
     filename: &str,
+    file_path: &str,
     pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let text = read_pptx(filename)?;
@@ -83,7 +85,7 @@ pub async fn parse_ppt(
 
     let avg_embeddings = average_embedding(&embeddings);
 
-    add_embedding(pool, filename, &avg_embeddings).await?;
+    add_embedding(pool, filename, file_path, &avg_embeddings, current_dir).await?;
 
     Ok(())
 }

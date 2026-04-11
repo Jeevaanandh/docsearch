@@ -40,7 +40,7 @@ pub fn run_app<B: ratatui::backend::Backend>(
 
             // Menu items
             let items: Vec<ListItem> = app
-                .options
+                .files
                 .iter()
                 .enumerate()
                 .map(|(i, option)| {

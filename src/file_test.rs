@@ -1,4 +1,4 @@
-use std::fs::read_dir;
+use std::{env, fs::read_dir};
 
 use sqlx::SqlitePool;
 use tokio::task;
@@ -8,9 +8,12 @@ use crate::repository::db::{delete_path, get_paths};
 
 use crate::ppt_test::parse_ppt;
 
+//Modified for global test.db
+//extract_pdf() call should still be modified
 pub async fn check_diff(pool: &SqlitePool) {
-    let files = match get_paths(pool).await {
-        Ok(paths) => paths,
+    let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+    let filepaths = match get_paths(pool).await {
+        Ok(paths) => paths.0,
 
         Err(e) => {
             println!("Error in getting paths from the DB: {}", e);
@@ -26,6 +29,8 @@ pub async fn check_diff(pool: &SqlitePool) {
         let file_name_buf = entry.file_name();
         let file_name = file_name_buf.to_str().unwrap().to_string();
 
+        let full_path = format!("{}/{}", &current_dir, &file_name);
+
         let file_clone = file_name.clone();
 
         if !file_name.starts_with(".")
@@ -35,13 +40,15 @@ pub async fn check_diff(pool: &SqlitePool) {
             cur_files.push(file_clone);
         }
 
-        if !files.contains(&file_name) {
-            if file_name.ends_with(".pptx") {
-                let p = pool.clone();
-                let f = file_name.clone();
+        let c = current_dir.clone();
+        let p = pool.clone();
+        let f = file_name.clone();
+        let fp = full_path.clone();
 
+        if !filepaths.contains(&full_path) {
+            if file_name.ends_with(".pptx") {
                 let handle = task::spawn(async move {
-                    match parse_ppt(&f, &p).await {
+                    match parse_ppt(&c, &f, &fp, &p).await {
                         Ok(_) => {
                             println!("{} was added Succseefully", f);
                         }
@@ -60,11 +67,8 @@ pub async fn check_diff(pool: &SqlitePool) {
                 continue;
             }
 
-            let p = pool.clone();
-            let f = file_name.clone();
-
             let handle = task::spawn(async move {
-                match extract_pdf(&f, &p).await {
+                match extract_pdf(&c, &f, &fp, &p).await {
                     Ok(_) => {
                         println!("{} was added Successfully!", f);
                     }
@@ -86,8 +90,9 @@ pub async fn check_diff(pool: &SqlitePool) {
     check_deletions(&cur_files, pool).await;
 }
 
+//Modified for global test.db
 async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
-    let db_paths = match get_paths(pool).await {
+    let db_rows = match get_paths(pool).await {
         Ok(paths) => paths,
 
         Err(e) => {
@@ -96,7 +101,9 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
         }
     };
 
-    for i in db_paths {
+    let filepaths = db_rows.1;
+
+    for i in filepaths {
         if !cur_files.contains(&i) {
             match delete_path(&i, pool).await {
                 Ok(_) => {
@@ -112,6 +119,10 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
 }
 
 //Tried doing something, found out it was worse than before
+//
+//
+
+/*
 
 async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
     let mut handles = Vec::new();
@@ -201,30 +212,38 @@ pub async fn parse_directory2(pool: &SqlitePool) {
     }
 }
 
+*/
+
 pub async fn parse_directory(pool: &SqlitePool) {
     let mut handles = Vec::new();
 
     for entry_res in read_dir(".").unwrap() {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
-        let file_name = file_name_buf.to_str().unwrap();
+        let file_name = file_name_buf.to_str().unwrap().to_string();
+
+        let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+
+        let full_path = format!("{}/{}", &current_dir, &file_name);
+
+        let f = file_name.clone();
+        let fp = full_path.clone();
+        let d = current_dir.clone();
+        let p = pool.clone();
 
         if !file_name.starts_with(".")
             && entry.file_type().unwrap().is_file()
             && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
         {
-            let path_str = entry.path().to_string_lossy().to_string();
-            let pool = pool.clone();
-
             if file_name.ends_with(".pptx") {
                 let handle = task::spawn(async move {
-                    match parse_ppt(&path_str, &pool).await {
+                    match parse_ppt(&d, &f, &fp, &p).await {
                         Ok(_) => {
-                            println!("{} was a Success!", path_str);
+                            println!("{} was a Success!", file_name);
                         }
 
                         Err(e) => {
-                            println!("{} failed. Error: {}", path_str, e);
+                            println!("{} failed. Error: {}", file_name, e);
                         }
                     }
                 });
@@ -235,13 +254,13 @@ pub async fn parse_directory(pool: &SqlitePool) {
             }
 
             let handle = task::spawn(async move {
-                match extract_pdf(&path_str, &pool).await {
+                match extract_pdf(&d, &f, &fp, &p).await {
                     Ok(_) => {
-                        println!("{} was a Success!", path_str);
+                        println!("{} was a Success!", f);
                     }
 
                     Err(e) => {
-                        println!("{} Failed {}", path_str, e);
+                        println!("{} Failed {}", f, e);
                     }
                 }
             });
