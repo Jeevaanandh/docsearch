@@ -12,7 +12,7 @@ use crate::ppt_test::parse_ppt;
 //extract_pdf() call should still be modified
 pub async fn check_diff(pool: &SqlitePool) {
     let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
-    let filepaths = match get_paths(pool).await {
+    let filenames = match get_paths(pool, &current_dir).await {
         Ok(paths) => paths.0,
 
         Err(e) => {
@@ -23,8 +23,16 @@ pub async fn check_diff(pool: &SqlitePool) {
 
     let mut cur_files: Vec<String> = Vec::new();
 
+    let dir = match read_dir(".") {
+        Ok(d) => d,
+        Err(_) => {
+            println!("Error");
+            return;
+        }
+    };
+
     let mut handles = Vec::new();
-    for entry_res in read_dir(".").unwrap() {
+    for entry_res in dir {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
         let file_name = file_name_buf.to_str().unwrap().to_string();
@@ -45,7 +53,7 @@ pub async fn check_diff(pool: &SqlitePool) {
         let f = file_name.clone();
         let fp = full_path.clone();
 
-        if !filepaths.contains(&full_path) {
+        if !filenames.contains(&file_name) {
             if file_name.ends_with(".pptx") {
                 let handle = task::spawn(async move {
                     match parse_ppt(&c, &f, &fp, &p).await {
@@ -87,12 +95,12 @@ pub async fn check_diff(pool: &SqlitePool) {
         i.await.unwrap();
     }
 
-    check_deletions(&cur_files, pool).await;
+    check_deletions(&cur_files, pool, &current_dir).await;
 }
 
 //Modified for global test.db
-async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
-    let db_rows = match get_paths(pool).await {
+async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool, current_dir: &str) {
+    let db_rows = match get_paths(pool, current_dir).await {
         Ok(paths) => paths,
 
         Err(e) => {
@@ -101,9 +109,9 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
         }
     };
 
-    let filepaths = db_rows.1;
+    let filenames = db_rows.0;
 
-    for i in filepaths {
+    for i in filenames {
         if !cur_files.contains(&i) {
             match delete_path(&i, pool).await {
                 Ok(_) => {
@@ -122,17 +130,19 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool) {
 //
 //
 
-/*
-
 async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
     let mut handles = Vec::new();
+    let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+
     for file in files {
         let f = file.clone();
         let p = pool.clone();
+        let c = current_dir.clone();
+        let fp = format!("{}/{}", &c, &f);
 
         if file.ends_with(".pdf") {
             let handle = task::spawn(async move {
-                match extract_pdf(&f, &p).await {
+                match extract_pdf(&c, &f, &fp, &p).await {
                     Ok(_) => {
                         println!("{} was a Success!", f);
                     }
@@ -146,7 +156,7 @@ async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
             handles.push(handle);
         } else {
             let handle = task::spawn(async move {
-                match parse_ppt(&f, &p).await {
+                match parse_ppt(&c, &f, &fp, &p).await {
                     Ok(_) => {
                         println!("{} was a Success!", f);
                     }
@@ -211,8 +221,6 @@ pub async fn parse_directory2(pool: &SqlitePool) {
         i.await.unwrap();
     }
 }
-
-*/
 
 pub async fn parse_directory(pool: &SqlitePool) {
     let mut handles = Vec::new();

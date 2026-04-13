@@ -1,7 +1,7 @@
 use crate::repository::db::add_embedding;
 use dirs;
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-use pdf_extract;
+use pdf_oxide::PdfDocument;
 use sqlx::SqlitePool;
 
 pub fn average_embedding(embeddings: &Vec<Vec<f32>>) -> Vec<f32> {
@@ -45,6 +45,7 @@ pub fn get_embedding(text: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Er
     Ok(embeddings)
 }
 
+/*
 pub async fn extract_pdf(
     cur_dir: &str,
     filename: &str,
@@ -61,6 +62,74 @@ pub async fn extract_pdf(
     }
 
     let embeddings = get_embedding(&text)?;
+
+    //This has to be added to the db with the file name as the primary key.
+    let avg_embeddings = average_embedding(&embeddings);
+
+    add_embedding(pool, filename, filepath, &avg_embeddings, cur_dir).await?;
+
+    Ok(())
+}
+
+*/
+
+pub async fn extract_pdf(
+    cur_dir: &str,
+    filename: &str,
+    filepath: &str,
+    pool: &SqlitePool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    //Extracting the text contents from the PDF
+    let mut doc = match PdfDocument::open(filepath) {
+        Ok(doc) => doc,
+
+        Err(e) => {
+            println!("Error: {}", e);
+            return Ok(());
+        }
+    };
+
+    let page_count = match doc.page_count() {
+        Ok(s) => s,
+        Err(_) => {
+            println!("Error extractin {}", filename);
+            return Ok(());
+        }
+    };
+
+    if page_count == 0 {
+        println!("Couldn't extract text from {}", filename);
+
+        return Ok(());
+    }
+
+    let mut content = String::new();
+
+    for i in 0..page_count {
+        let text = match doc.extract_text(i) {
+            Ok(s) => s,
+
+            Err(_) => {
+                println!("Error extracting {}", filename);
+                return Ok(());
+            }
+        };
+
+        content.push_str(&text);
+        content.push_str("\n\n");
+    }
+
+    if content.is_empty() {
+        println!("No text content found for: {}", filename);
+        return Ok(());
+    }
+
+    let embeddings = get_embedding(&content)?;
+
+    if embeddings.is_empty() {
+        println!("No text content found for: {}", filename);
+        return Ok(());
+    }
 
     //This has to be added to the db with the file name as the primary key.
     let avg_embeddings = average_embedding(&embeddings);

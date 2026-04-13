@@ -11,7 +11,7 @@ mod watcher;
 
 use crate::repository::db::db_init;
 use app::run_app;
-use file_test::{check_diff, parse_directory};
+use file_test::{check_diff, parse_directory, parse_directory2};
 use search::search;
 
 use crossterm::{
@@ -143,7 +143,7 @@ async fn main() {
                     return;
                 }
             };
-            parse_directory(&pool).await;
+            parse_directory2(&pool).await;
         }
 
         Command::Sync => {

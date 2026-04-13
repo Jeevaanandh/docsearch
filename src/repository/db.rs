@@ -103,10 +103,15 @@ pub async fn search_db(
 
 //This function was modified to fit the global test.db
 //It now returns files(vector of names of the files) and the filepaths(full paths of the files)
-pub async fn get_paths(pool: &SqlitePool) -> Result<(Vec<String>, Vec<String>), sqlx::Error> {
-    let rows: Vec<(String, String)> = sqlx::query_as("SELECT file, filepath FROM embeddings")
-        .fetch_all(pool)
-        .await?;
+pub async fn get_paths(
+    pool: &SqlitePool,
+    current_dir: &str,
+) -> Result<(Vec<String>, Vec<String>), sqlx::Error> {
+    let rows: Vec<(String, String)> =
+        sqlx::query_as("SELECT file, filepath FROM embeddings WHERE dir = ?")
+            .bind(current_dir)
+            .fetch_all(pool)
+            .await?;
 
     let mut files = Vec::with_capacity(rows.len());
     let mut filepaths = Vec::with_capacity(rows.len());
