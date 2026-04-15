@@ -1,7 +1,7 @@
 use crate::repository::db::add_embedding;
 use dirs;
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-use pdf_oxide::PdfDocument;
+use pdf_extract;
 use sqlx::SqlitePool;
 
 pub fn average_embedding(embeddings: &Vec<Vec<f32>>) -> Vec<f32> {
@@ -80,60 +80,22 @@ pub async fn extract_pdf(
     pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     //Extracting the text contents from the PDF
-    let mut doc = match PdfDocument::open(filepath) {
-        Ok(doc) => doc,
+    let text = pdf_extract::extract_text(filepath)?;
 
-        Err(e) => {
-            println!("Error: {}", e);
-            return Ok(());
-        }
-    };
+    let text = text.replace('\u{00A0}', " ");
 
-    let page_count = match doc.page_count() {
-        Ok(s) => s,
-        Err(_) => {
-            println!("Error extractin {}", filename);
-            return Ok(());
-        }
-    };
-
-    if page_count == 0 {
-        println!("Couldn't extract text from {}", filename);
-
+    if text.is_empty() {
         return Ok(());
     }
 
-    let mut content = String::new();
-
-    for i in 0..page_count {
-        let text = match doc.extract_text(i) {
-            Ok(s) => s,
-
-            Err(_) => {
-                println!("Error extracting {}", filename);
-                return Ok(());
-            }
-        };
-
-        content.push_str(&text);
-        content.push_str("\n\n");
-    }
-
-    if content.is_empty() {
-        println!("No text content found for: {}", filename);
-        return Ok(());
-    }
-
-    let embeddings = get_embedding(&content)?;
+    let embeddings = get_embedding(&text)?;
 
     if embeddings.is_empty() {
-        println!("No text content found for: {}", filename);
         return Ok(());
     }
 
     //This has to be added to the db with the file name as the primary key.
     let avg_embeddings = average_embedding(&embeddings);
-
     add_embedding(pool, filename, filepath, &avg_embeddings, cur_dir).await?;
 
     Ok(())

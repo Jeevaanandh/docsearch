@@ -1,3 +1,4 @@
+use std::thread::JoinHandle;
 use std::{env, fs::read_dir};
 
 use sqlx::SqlitePool;
@@ -127,8 +128,9 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool, current_dir
 }
 
 //Tried doing something, found out it was worse than before
-//
-//
+// Improved Approcach:
+// Try creating handles for extract_pdf and parse_ppt and add them to different vectors.
+// if the length of each of the vector is == 5, execute the handles.
 
 async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
     let mut handles = Vec::new();
@@ -222,8 +224,21 @@ pub async fn parse_directory2(pool: &SqlitePool) {
     }
 }
 
+async fn execute_pdf_tasks(handles: Vec<tokio::task::JoinHandle<()>>) {
+    for i in handles {
+        i.await.unwrap();
+    }
+}
+
+async fn execute_ppt_tasks(handles: Vec<tokio::task::JoinHandle<()>>) {
+    for i in handles {
+        i.await.unwrap();
+    }
+}
+
 pub async fn parse_directory(pool: &SqlitePool) {
-    let mut handles = Vec::new();
+    let mut pdf_handles = Vec::new();
+    let mut ppt_handles = Vec::new();
 
     for entry_res in read_dir(".").unwrap() {
         let entry = entry_res.unwrap();
@@ -247,37 +262,49 @@ pub async fn parse_directory(pool: &SqlitePool) {
                 let handle = task::spawn(async move {
                     match parse_ppt(&d, &f, &fp, &p).await {
                         Ok(_) => {
-                            println!("{} was a Success!", file_name);
+                            println!("{} was a Success!", f);
                         }
 
                         Err(e) => {
-                            println!("{} failed. Error: {}", file_name, e);
+                            println!("{} failed. Error: {}", f, e);
                         }
                     }
                 });
 
-                handles.push(handle);
+                ppt_handles.push(handle);
+            } else {
+                let handle = task::spawn(async move {
+                    match extract_pdf(&d, &f, &fp, &p).await {
+                        Ok(_) => {
+                            println!("{} was a Success!", f);
+                        }
 
-                continue;
+                        Err(e) => {
+                            println!("{} Failed {}", f, e);
+                        }
+                    }
+                });
+
+                pdf_handles.push(handle);
             }
 
-            let handle = task::spawn(async move {
-                match extract_pdf(&d, &f, &fp, &p).await {
-                    Ok(_) => {
-                        println!("{} was a Success!", f);
-                    }
+            if pdf_handles.len() == 5 {
+                execute_pdf_tasks(pdf_handles).await;
+                pdf_handles = Vec::new();
+            }
 
-                    Err(e) => {
-                        println!("{} Failed {}", f, e);
-                    }
-                }
-            });
-
-            handles.push(handle);
+            if ppt_handles.len() == 5 {
+                execute_ppt_tasks(ppt_handles).await;
+                ppt_handles = Vec::new();
+            }
         }
     }
 
-    for i in handles {
-        i.await.unwrap();
+    if (!pdf_handles.is_empty()) {
+        execute_pdf_tasks(pdf_handles).await;
+    }
+
+    if (!ppt_handles.is_empty()) {
+        execute_ppt_tasks(ppt_handles).await;
     }
 }

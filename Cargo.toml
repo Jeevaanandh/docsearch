@@ -1,11 +1,10 @@
 [package]
 name = "docsearch"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"  # Fix: 2024 isn't valid
 
 [dependencies]
 clap = { version = "4", features = ["derive"]}
-pdf-extract = "0.7"
 fastembed = "5"
 dirs = "5"
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-native-tls", "macros"] }
@@ -17,5 +16,4 @@ crossterm = "0.27"
 zip = "0.6"
 quick-xml = "0.31"
 notify = { version = "8.1.0", features = ["serde"] }
-
-pdf_oxide = "0.3"
+pdf-extract = "0.7"

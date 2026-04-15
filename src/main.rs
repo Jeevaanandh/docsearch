@@ -143,7 +143,7 @@ async fn main() {
                     return;
                 }
             };
-            parse_directory2(&pool).await;
+            parse_directory(&pool).await;
         }
 
         Command::Sync => {
