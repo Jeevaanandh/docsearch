@@ -17,3 +17,4 @@ zip = "0.6"
 quick-xml = "0.31"
 notify = { version = "8.1.0", features = ["serde"] }
 pdf-extract = "0.7"
+pdf_oxide = "0.3"
