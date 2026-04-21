@@ -123,7 +123,13 @@ pub async fn extract_pdf(
 
     let mut text = String::new();
 
-    let page_count = doc.page_count().unwrap();
+    let mut page_count = doc.page_count().unwrap();
+
+    if page_count > 50 {
+        page_count = 50;
+    }
+
+    println!("Current File: {}", filename);
 
     for i in 0..page_count {
         let content = match doc.extract_text(i) {

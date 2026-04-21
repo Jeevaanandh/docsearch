@@ -1,4 +1,3 @@
-use std::thread::JoinHandle;
 use std::{env, fs::read_dir};
 
 use sqlx::SqlitePool;
@@ -32,7 +31,8 @@ pub async fn check_diff(pool: &SqlitePool) {
         }
     };
 
-    let mut handles = Vec::new();
+    let mut pdf_handles = Vec::new();
+    let mut ppt_handles = Vec::new();
     for entry_res in dir {
         let entry = entry_res.unwrap();
         let file_name_buf = entry.file_name();
@@ -68,10 +68,17 @@ pub async fn check_diff(pool: &SqlitePool) {
                     }
                 });
 
-                handles.push(handle);
+                ppt_handles.push(handle);
+
+                if ppt_handles.len() == 5 {
+                    execute_ppt_tasks(ppt_handles).await;
+
+                    ppt_handles = Vec::new();
+                }
 
                 continue;
             }
+
             if !file_name.ends_with(".pdf") {
                 continue;
             }
@@ -88,12 +95,22 @@ pub async fn check_diff(pool: &SqlitePool) {
                 }
             });
 
-            handles.push(handle);
+            pdf_handles.push(handle);
+
+            if pdf_handles.len() == 5 {
+                execute_pdf_tasks(pdf_handles).await;
+
+                pdf_handles = Vec::new();
+            }
         }
     }
 
-    for i in handles {
-        i.await.unwrap();
+    if !pdf_handles.is_empty() {
+        execute_pdf_tasks(pdf_handles).await;
+    }
+
+    if !ppt_handles.is_empty() {
+        execute_ppt_tasks(ppt_handles).await;
     }
 
     check_deletions(&cur_files, pool, &current_dir).await;
@@ -300,11 +317,11 @@ pub async fn parse_directory(pool: &SqlitePool) {
         }
     }
 
-    if (!pdf_handles.is_empty()) {
+    if !pdf_handles.is_empty() {
         execute_pdf_tasks(pdf_handles).await;
     }
 
-    if (!ppt_handles.is_empty()) {
+    if !ppt_handles.is_empty() {
         execute_ppt_tasks(ppt_handles).await;
     }
 }
