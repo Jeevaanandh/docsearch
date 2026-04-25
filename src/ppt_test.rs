@@ -1,4 +1,4 @@
-use quick_xml::{Reader, events::Event};
+use quick_xml::{events::Event, Reader};
 
 use std::{
     fs::File,
@@ -82,6 +82,10 @@ pub async fn parse_ppt(
     let text = read_pptx(filename)?;
 
     let embeddings = get_embedding(&text)?;
+
+    if embeddings.is_empty() {
+        return Ok(());
+    }
 
     let avg_embeddings = average_embedding(&embeddings);
 

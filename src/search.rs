@@ -4,7 +4,7 @@ use dirs;
 use sqlx::SqlitePool;
 use std::result::Result;
 
-use faiss::{Index, MetricType, index::SearchResult, index_factory};
+use faiss::{index::SearchResult, index_factory, Index, MetricType};
 
 fn faiss_impl(
     embeddings: &Vec<Vec<f32>>,

@@ -31,3 +31,10 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 
 
+6. Make some functions common. 
+Eg: in pdf_test and ppt_test ---- extract_pdf() and extract_test_from_xml() perform similar functionality get text, get embeddings and add the embeddings to the database.
+
+Probably, after getting the text, call a common function to handle the process of getting embeddings, avg_embeddings and adding to the DB.
+
+
+
