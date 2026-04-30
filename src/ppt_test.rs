@@ -7,7 +7,7 @@ use std::{
 
 use zip::ZipArchive;
 
-use crate::pdf_test::{average_embedding, get_embedding};
+use crate::embed::{average_embedding, get_embedding, process};
 
 use sqlx::SqlitePool;
 
@@ -74,22 +74,16 @@ fn extract_text_from_xml(xml: &str) -> Result<String, Box<dyn std::error::Error>
 }
 
 pub async fn parse_ppt(
-    current_dir: &str,
+    cur_dir: &str,
     filename: &str,
-    file_path: &str,
+    filepath: &str,
     pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let text = read_pptx(filename)?;
 
-    let embeddings = get_embedding(&text)?;
+    //Text is extracted
 
-    if embeddings.is_empty() {
-        return Ok(());
-    }
-
-    let avg_embeddings = average_embedding(&embeddings);
-
-    add_embedding(pool, filename, file_path, &avg_embeddings, current_dir).await?;
+    process(&text, filename, filepath, cur_dir, pool).await?;
 
     Ok(())
 }

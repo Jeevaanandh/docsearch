@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod app;
+mod embed;
 mod file_test;
 mod open_file;
 mod pdf_test;
@@ -17,9 +18,9 @@ use search::search;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 pub struct App {

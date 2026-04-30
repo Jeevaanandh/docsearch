@@ -1,4 +1,4 @@
-use crate::pdf_test::{average_embedding, get_embedding};
+use crate::embed::{average_embedding, get_embedding};
 use crate::repository::db::search_db;
 use dirs;
 use sqlx::SqlitePool;

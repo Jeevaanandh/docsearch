@@ -5,12 +5,7 @@
 
 3. Resolve the error with the pdf reader. (Do error handling)
 
-(NO NEED FOR THIS, tokio HAS MULTIPLE THREADS IN ITS THREAD POOL)
-4. Use multithreading in pdf/ppt processing ----- use 1 thread for every 20 files?
-	For this, make changes to parse_directory() in file_test.rs and check diff.
-	* Create a vector of strings to store the file names. Once the len of the vector is 20, create a thread, to run a 	      function (extract_ content())
-	* This function will go through all the item in the list and call extract_pdf() or parse_ppt().
-	* The thread will handle the embeddings part. Then, clear the vector and go to the next 20.
+
 
 
 5. Make this like a directory watcher. Users can mention what directories to watch (ie. init).
@@ -31,6 +26,8 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 
 
+
+(RESOLVED)
 6. Make some functions common. 
 Eg: in pdf_test and ppt_test ---- extract_pdf() and extract_test_from_xml() perform similar functionality get text, get embeddings and add the embeddings to the database.
 
