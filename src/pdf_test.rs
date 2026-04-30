@@ -1,7 +1,6 @@
 use crate::repository::db::add_embedding;
 use dirs;
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-use pdf_extract;
 use pdf_oxide::PdfDocument;
 use sqlx::SqlitePool;
 
