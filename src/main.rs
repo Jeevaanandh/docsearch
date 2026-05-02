@@ -8,12 +8,13 @@ mod pdf_test;
 mod ppt_test;
 mod repository;
 mod search;
+mod search_new;
 mod watcher;
 
 use crate::repository::db::db_init;
 use app::run_app;
 use file_test::{check_diff, parse_directory, parse_directory2};
-use search::search;
+use search_new::search;
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},

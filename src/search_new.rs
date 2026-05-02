@@ -1,29 +1,38 @@
-/*
-
 use crate::embed::{average_embedding, get_embedding};
 use crate::repository::db::search_db;
 use dirs;
 use sqlx::SqlitePool;
-use std::result::Result;
-
-use faiss::{index::SearchResult, index_factory, Index, MetricType};
+use std::{error::Error, result::Result};
+use usearch::{new_index, Index, IndexOptions, MetricKind, ScalarKind};
 
 fn faiss_impl(
     embeddings: &Vec<Vec<f32>>,
-    prompt_embedding: &Vec<f32>,
-) -> Result<SearchResult<f32>, faiss::error::Error> {
+    prompt_embeddings: &Vec<f32>,
+) -> Result<(Vec<u64>, Vec<f32>), Box<dyn Error>> {
     let len = embeddings.len();
-    let n_res = len.min(10);
     let dim = embeddings[0].len();
-    let mut index = index_factory(dim as u32, "Flat", MetricType::L2)?;
+    let n_res = len.min(10);
 
-    let flat: Vec<f32> = embeddings.iter().flatten().cloned().collect();
+    let options = IndexOptions {
+        dimensions: dim,               // necessary for most metric kinds
+        metric: MetricKind::L2sq,      // or ::L2sq, ::Cos ...
+        quantization: ScalarKind::F32, // or ::F32, ::F16, ::E5M2, ::E4M3, ::E3M2, ::E2M3, ::U8, ::I8, ::B1x8 ...
+        connectivity: 0,               // zero for auto
+        expansion_add: 0,              // zero for auto
+        expansion_search: 0,
+        multi: false,
+    };
 
-    index.add(&flat)?;
+    let mut index: Index = new_index(&options)?;
+    index.reserve(len)?;
 
-    let result = index.search(prompt_embedding, n_res)?;
+    for (i, emb) in embeddings.iter().enumerate() {
+        index.add(i as u64, emb)?;
+    }
 
-    Ok(result)
+    let matches = index.search(prompt_embeddings, n_res)?;
+
+    Ok((matches.keys, matches.distances))
 }
 
 pub async fn search(prompt: &str, pool: &SqlitePool) -> (Vec<String>, Vec<String>) {
@@ -56,23 +65,18 @@ pub async fn search(prompt: &str, pool: &SqlitePool) -> (Vec<String>, Vec<String
         }
     };
 
-    let mut counter = 0;
+    let keys = faiss_result.0;
+    let dist = faiss_result.1;
+
     let mut result_files: Vec<String> = Vec::new();
     let mut result_paths: Vec<String> = Vec::new();
 
-    for i in faiss_result.labels {
-        if faiss_result.distances[counter] >= 1.0 {
-            counter += 1;
-            continue;
-        }
-        let ind = i.to_native() as usize;
+    for i in 0..keys.len() {
+        let ind = keys[i] as usize;
+
         result_files.push(files[ind].clone());
         result_paths.push(filepaths[ind].clone());
-
-        counter += 1;
     }
 
     (result_files, result_paths)
 }
-
-*/

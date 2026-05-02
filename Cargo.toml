@@ -10,7 +10,6 @@ dirs = "5"
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-native-tls", "macros"] }
 tokio = { version = "1", features = ["full"] }
 bytemuck = "1.14"
-faiss = "0.13.0"
 ratatui = "0.26"
 crossterm = "0.27"
 zip = "0.6"
@@ -18,3 +17,4 @@ quick-xml = "0.31"
 notify = { version = "8.1.0", features = ["serde"] }
 pdf-extract = "0.7"
 pdf_oxide = "0.3"
+usearch = { version = "2.25.1", default-features = false }
