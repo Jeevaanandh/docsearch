@@ -34,4 +34,6 @@ Eg: in pdf_test and ppt_test ---- extract_pdf() and extract_test_from_xml() perf
 Probably, after getting the text, call a common function to handle the process of getting embeddings, avg_embeddings and adding to the DB.
 
 
+7. Use a rust based faiss alternative. Right now, faiss has to be installed manually ----- this causes linking error if its not instaleld right.
 
+8. Remove some useless transitive dependencies. Right now, 662 dependencies are compiled during build time.
