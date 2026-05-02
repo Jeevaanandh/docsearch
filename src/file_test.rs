@@ -8,6 +8,8 @@ use crate::repository::db::{delete_path, get_paths};
 
 use crate::ppt_test::parse_ppt;
 
+const MAX_BATCHING: i32 = 5;
+
 //Modified for global test.db
 //extract_pdf() call should still be modified
 pub async fn check_diff(pool: &SqlitePool) {
@@ -70,7 +72,7 @@ pub async fn check_diff(pool: &SqlitePool) {
 
                 ppt_handles.push(handle);
 
-                if ppt_handles.len() == 5 {
+                if ppt_handles.len() == MAX_BATCHING as usize {
                     execute_ppt_tasks(ppt_handles).await;
 
                     ppt_handles = Vec::new();
@@ -97,7 +99,7 @@ pub async fn check_diff(pool: &SqlitePool) {
 
             pdf_handles.push(handle);
 
-            if pdf_handles.len() == 5 {
+            if pdf_handles.len() == MAX_BATCHING as usize {
                 execute_pdf_tasks(pdf_handles).await;
 
                 pdf_handles = Vec::new();
@@ -143,6 +145,8 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool, current_dir
         }
     }
 }
+
+//This function is not used
 
 //Tried doing something, found out it was worse than before
 // Improved Approcach:
@@ -194,6 +198,8 @@ async fn process_file(files: &Vec<String>, pool: &SqlitePool) {
         i.await.unwrap();
     }
 }
+
+//This function is not used
 
 pub async fn parse_directory2(pool: &SqlitePool) {
     let mut files: Vec<String> = Vec::new();
@@ -305,12 +311,12 @@ pub async fn parse_directory(pool: &SqlitePool) {
                 pdf_handles.push(handle);
             }
 
-            if pdf_handles.len() == 5 {
+            if pdf_handles.len() == MAX_BATCHING as usize {
                 execute_pdf_tasks(pdf_handles).await;
                 pdf_handles = Vec::new();
             }
 
-            if ppt_handles.len() == 5 {
+            if ppt_handles.len() == MAX_BATCHING as usize {
                 execute_ppt_tasks(ppt_handles).await;
                 ppt_handles = Vec::new();
             }

@@ -37,3 +37,13 @@ Probably, after getting the text, call a common function to handle the process o
 7. Use a rust based faiss alternative. Right now, faiss has to be installed manually ----- this causes linking error if its not instaleld right.
 
 8. Remove some useless transitive dependencies. Right now, 662 dependencies are compiled during build time.
+
+
+
+
+
+IMPROVEMENTS:
+
+1. When docsearch is run for the very first time ----- make sure the model is downloaded first before the embeddings are being done.
+
+2. Right now, the files are processed in batches of 5 ----- this may overload some CPU's ----- try to find some way you can get the CPU info. and do the multiprocessing based on that
