@@ -80,6 +80,8 @@ enum Cmd {
     Start, // This is to start the watcher using docsearch.
 
     Add, //This is to add a directory to the watchlist,
+
+    Stop,
 }
 
 fn setup_app(app: &mut App) -> Result<(), io::Error> {
@@ -272,6 +274,29 @@ async fn main() {
 
                 Err(_) => {
                     println!("Error starting the daemon");
+                    return;
+                }
+            }
+        }
+
+        Cmd::Stop => {
+            let home = env::home_dir().unwrap().to_str().unwrap().to_string();
+            let plistpath = format!("{}/com.docsearch.plist", home);
+
+            let output = Command::new("id").arg("-u").output().unwrap();
+
+            let uid = String::from_utf8(output.stdout).unwrap().trim().to_string();
+
+            match Command::new("launchctl")
+                .args(["bootout", &format!("gui/{}", uid), &plistpath])
+                .status()
+            {
+                Ok(_) => {
+                    println!("Daemon Stopped Successfully");
+                }
+
+                Err(_) => {
+                    println!("Error Stopping the daemon. Check if the daemon is running");
                     return;
                 }
             }
