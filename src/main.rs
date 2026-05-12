@@ -24,7 +24,9 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
+use std::fs;
 use std::io;
+use std::process::Command;
 
 pub struct App {
     files: Vec<String>,
@@ -62,20 +64,22 @@ impl App {
 #[command(name = "docsearch", about = "Document Search")]
 struct Args {
     #[command(subcommand)]
-    command: Command,
+    command: Cmd,
 }
 
 #[derive(Subcommand)]
-enum Command {
+enum Cmd {
     Search { prompt: String },
 
     Init,
 
     Sync,
 
-    Start,
+    Begin, //This is to start the watcher for the daemon
 
-    Add,
+    Start, // This is to start the watcher using docsearch.
+
+    Add, //This is to add a directory to the watchlist,
 }
 
 fn setup_app(app: &mut App) -> Result<(), io::Error> {
@@ -107,7 +111,7 @@ async fn main() {
     let args = Args::parse();
 
     match args.command {
-        Command::Search { prompt } => {
+        Cmd::Search { prompt } => {
             let pool = match db_init().await {
                 Ok(p) => p,
 
@@ -142,7 +146,7 @@ async fn main() {
             };
         }
 
-        Command::Init => {
+        Cmd::Init => {
             let pool = match db_init().await {
                 Ok(p) => p,
 
@@ -154,7 +158,7 @@ async fn main() {
             parse_directory(&pool).await;
         }
 
-        Command::Sync => {
+        Cmd::Sync => {
             let pool = match db_init().await {
                 Ok(p) => p,
 
@@ -167,7 +171,7 @@ async fn main() {
             check_diff(&pool).await;
         }
 
-        Command::Add => {
+        Cmd::Add => {
             let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
 
             let mut stream = match UnixStream::connect("/tmp/server.sock") {
@@ -200,8 +204,77 @@ async fn main() {
             println!("{}", res);
         }
 
-        Command::Start => {
+        Cmd::Begin => {
             start_watch();
+        }
+
+        Cmd::Start => {
+            let home = env::home_dir().unwrap().to_str().unwrap().to_string();
+            let exedir = env::current_exe().unwrap().to_str().unwrap().to_string();
+            let plistpath = format!("{}/com.docsearch.plist", home);
+
+            let plist = format!(
+                r#"
+
+                 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<plist version="1.0">
+<dict>
+
+    <key>Label</key>
+    <string>com.jeeva.docsearch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{}</string>
+        <string>begin</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/docsearch_new.out</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/docsearch_new.err</string>
+
+</dict>
+</plist>"#,
+                exedir
+            );
+
+            match fs::write(&plistpath, plist) {
+                Ok(_) => {}
+
+                Err(_) => {
+                    println!("Error in writing the plist file");
+                    return;
+                }
+            }
+
+            let output = Command::new("id").arg("-u").output().unwrap();
+
+            let uid = String::from_utf8(output.stdout).unwrap().trim().to_string();
+
+            match Command::new("launchctl")
+                .args(["bootstrap", &format!("gui/{}", uid), &plistpath])
+                .status()
+            {
+                Ok(_) => {
+                    println!("Daemon Started Successfully");
+                }
+
+                Err(_) => {
+                    println!("Error starting the daemon");
+                    return;
+                }
+            }
         }
     }
 }
