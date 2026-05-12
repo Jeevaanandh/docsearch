@@ -27,6 +27,7 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 * Use the daemonize crate 
 
+
 * daemonize.start() ----- automatically creates a new background process.
 
 

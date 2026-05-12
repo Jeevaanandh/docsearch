@@ -1,22 +1,70 @@
-use notify::{Event, RecursiveMode, Result, Watcher};
+use notify::{Event, FsEventWatcher, RecursiveMode, Result, Watcher};
+use std::sync::{Arc, Mutex};
 use std::{path::Path, sync::mpsc};
 
-pub fn add_watch() {}
+use std::io::{Read, Write};
+use std::os::unix::net::UnixListener;
+use std::thread;
 
-pub fn watch() -> Result<()> {
-    let (tx, rx) = mpsc::channel::<Result<Event>>();
-    let mut watcher = notify::recommended_watcher(tx)?;
-
+fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.
-    watcher.watch(Path::new("."), RecursiveMode::Recursive)?;
+
     // Block forever, printing out events as they come in
     for res in rx {
         match res {
-            Ok(event) => println!("event: {:?}", event),
+            Ok(event) => match event.kind {
+                notify::EventKind::Create(_) => {
+                    println!("File Added: {:?}", event.paths[0]);
+                }
+
+                _ => {}
+            },
             Err(e) => println!("watch error: {:?}", e),
         }
     }
+
+    Ok(())
+}
+
+fn add_watch_listener(watcher: Arc<Mutex<FsEventWatcher>>) -> notify::Result<()> {
+    let socket_path = "/tmp/server.sock";
+
+    let _ = std::fs::remove_file(socket_path);
+    let listener = UnixListener::bind(socket_path)?;
+
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        let mut buffer = [0; 1024];
+        let bytes_read = stream.read(&mut buffer)?;
+        let message = String::from_utf8_lossy(&buffer[..bytes_read]);
+        let mut watcher = watcher.lock().unwrap();
+
+        watcher.watch(Path::new(message.trim()), RecursiveMode::Recursive)?;
+
+        //Add the path to the watchlist
+    }
+
+    Ok(())
+}
+
+pub fn start_watch() -> Result<()> {
+    let (tx, rx) = mpsc::channel::<Result<Event>>();
+    let mut watcher = notify::recommended_watcher(tx)?;
+    let watcher = Arc::new(Mutex::new(watcher));
+
+    let mut watcher_clone = watcher.clone();
+
+    let watcher_handle = thread::spawn(move || {
+        watcherfn(rx);
+    });
+
+    let listener_handle = thread::spawn(move || {
+        add_watch_listener(watcher_clone);
+    });
+
+    watcher_handle.join().unwrap();
+    listener_handle.join().unwrap();
 
     Ok(())
 }

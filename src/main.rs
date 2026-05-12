@@ -13,13 +13,17 @@ use crate::repository::db::db_init;
 use app::run_app;
 use file_test::{check_diff, parse_directory, parse_directory2};
 use search::search;
+use std::env;
+use std::io::{Read, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
+use watcher::start_watch;
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 pub struct App {
@@ -68,6 +72,10 @@ enum Command {
     Init,
 
     Sync,
+
+    Start,
+
+    Add,
 }
 
 fn setup_app(app: &mut App) -> Result<(), io::Error> {
@@ -157,6 +165,43 @@ async fn main() {
             };
 
             check_diff(&pool).await;
+        }
+
+        Command::Add => {
+            let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+
+            let mut stream = match UnixStream::connect("/tmp/server.sock") {
+                Ok(r) => r,
+
+                Err(e) => {
+                    println!("Error in creating the stream");
+                    return;
+                }
+            };
+            match stream.write_all(current_dir.as_bytes()) {
+                Ok(r) => {}
+                Err(e) => {
+                    println!("Error in writing to the stream");
+                    return;
+                }
+            };
+
+            let mut res = String::new();
+
+            match stream.read_to_string(&mut res) {
+                Ok(r) => {}
+
+                Err(e) => {
+                    println!("Error in reading from the stream");
+                    return;
+                }
+            };
+
+            println!("{}", res);
+        }
+
+        Command::Start => {
+            start_watch();
         }
     }
 }
