@@ -79,7 +79,7 @@ pub async fn parse_ppt(
     filepath: &str,
     pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let text = read_pptx(filename)?;
+    let text = read_pptx(filepath)?;
 
     //Text is extracted
 

@@ -12,8 +12,15 @@ const MAX_BATCHING: i32 = 5;
 
 //Modified for global test.db
 //extract_pdf() call should still be modified
-pub async fn check_diff(pool: &SqlitePool) {
-    let current_dir = env::current_dir().unwrap().to_str().unwrap().to_string();
+pub async fn check_diff(pool: &SqlitePool, dir: &str) {
+    let current_dir = {
+        if dir.is_empty() {
+            env::current_dir().unwrap().to_str().unwrap().to_string()
+        } else {
+            dir.to_string()
+        }
+    };
+    println!("{:?}", current_dir);
     let filenames = match get_paths(pool, &current_dir).await {
         Ok(paths) => paths.0,
 
@@ -25,7 +32,7 @@ pub async fn check_diff(pool: &SqlitePool) {
 
     let mut cur_files: Vec<String> = Vec::new();
 
-    let dir = match read_dir(".") {
+    let dir = match read_dir(&current_dir) {
         Ok(d) => d,
         Err(_) => {
             println!("Error");
@@ -48,7 +55,7 @@ pub async fn check_diff(pool: &SqlitePool) {
             && entry.file_type().unwrap().is_file()
             && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
         {
-            cur_files.push(file_clone);
+            cur_files.push(full_path.clone());
         }
 
         let c = current_dir.clone();
@@ -129,9 +136,9 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool, current_dir
         }
     };
 
-    let filenames = db_rows.0;
+    let filepaths = db_rows.1;
 
-    for i in filenames {
+    for i in filepaths {
         if !cur_files.contains(&i) {
             match delete_path(&i, pool).await {
                 Ok(_) => {

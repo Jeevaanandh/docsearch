@@ -1,6 +1,7 @@
 (RESOLVED)
 1. Add the logic to check for deleted files in sync and delete them in the DB.
 
+(Not Needed)
 2. Add a way to embed only a single specified file from the current directory.
 
 3. Resolve the error with the pdf reader. (Do error handling)
@@ -8,6 +9,7 @@
 
 
 
+(Resolved)
 5. Make this like a directory watcher. Users can mention what directories to watch (ie. init).
 After init is done, embed the existing files then, embed just files that are added (this can be done by directory watching). This removes the need for sync.
 
@@ -22,10 +24,12 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 * Use the daemonize crate 
 
+
 * daemonize.start() ----- automatically creates a new background process.
 
 
 
+<<<<<<< HEAD
 
 (RESOLVED)
 6. Make some functions common. 
@@ -47,3 +51,18 @@ IMPROVEMENTS:
 1. When docsearch is run for the very first time ----- make sure the model is downloaded first before the embeddings are being done.
 
 2. Right now, the files are processed in batches of 5 ----- this may overload some CPU's ----- try to find some way you can get the CPU info. and do the multiprocessing based on that
+=======
+6. The paths added to the watchlist should be added to the DB so, that when docsearch strat is run, paths added previously to the watchlist can be watched automatically.
+
+Also, add a command to view all the paths being watched.
+
+
+
+IMP:
+Call the docsearch sync command everytime a valid change is detected ----- This can be done via a new process.
+Probably ---- modify the functionality of sync to take an optional argument.
+	      ie. if an argument is given (path) run sync on that specified path. Otherwise, do sync from the path where sync was    called from.
+
+
+
+>>>>>>> watcher
