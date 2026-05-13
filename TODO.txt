@@ -1,6 +1,7 @@
 (RESOLVED)
 1. Add the logic to check for deleted files in sync and delete them in the DB.
 
+(Not Needed)
 2. Add a way to embed only a single specified file from the current directory.
 
 3. Resolve the error with the pdf reader. (Do error handling)
@@ -13,6 +14,7 @@
 	* The thread will handle the embeddings part. Then, clear the vector and go to the next 20.
 
 
+(Resolved)
 5. Make this like a directory watcher. Users can mention what directories to watch (ie. init).
 After init is done, embed the existing files then, embed just files that are added (this can be done by directory watching). This removes the need for sync.
 
@@ -29,6 +31,12 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 
 * daemonize.start() ----- automatically creates a new background process.
+
+
+
+6. The paths added to the watchlist should be added to the DB so, that when docsearch strat is run, paths added previously to the watchlist can be watched automatically.
+
+Also, add a command to view all the paths being watched.
 
 
 
