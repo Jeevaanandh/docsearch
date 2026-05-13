@@ -53,7 +53,7 @@ pub async fn check_diff(pool: &SqlitePool, dir: &str) {
             && entry.file_type().unwrap().is_file()
             && ((file_name.ends_with(".pdf")) || file_name.ends_with(".pptx"))
         {
-            cur_files.push(file_clone);
+            cur_files.push(full_path.clone());
         }
 
         let c = current_dir.clone();
@@ -117,9 +117,9 @@ async fn check_deletions(cur_files: &Vec<String>, pool: &SqlitePool, current_dir
         }
     };
 
-    let filenames = db_rows.0;
+    let filepaths = db_rows.1;
 
-    for i in filenames {
+    for i in filepaths {
         if !cur_files.contains(&i) {
             match delete_path(&i, pool).await {
                 Ok(_) => {

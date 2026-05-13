@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::os::unix::net::UnixListener;
 use std::process::Command;
 use std::thread;
+use std::time::{Duration, Instant};
 
 fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     // Add a path to be watched. All files and directories at that path and
@@ -21,14 +22,16 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     // The type of event doesnt matter ----- look at the file name, check if it exists, if it does,
     // embed, if it doesnt, delete it.
     //
+
+    let mut last_run = Instant::now();
     for res in rx {
         match res {
-            Ok(event) => match event.kind {
-                notify::EventKind::Create(_) => {
-                    // event.paths[0].parent() gives
-                    // the directory the file belongs
-                    // to.
+            Ok(event) => {
+                let event_instant = Instant::now();
 
+                let elapsed = last_run.elapsed();
+
+                if elapsed > Duration::from_secs(1) {
                     let path = match event.paths[0].parent() {
                         Some(p) => p.to_str().unwrap().to_string(),
 
@@ -48,10 +51,11 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
                     } else {
                         println!("Embeddings failed");
                     }
-                }
 
-                _ => {}
-            },
+                    last_run = event_instant;
+                }
+            }
+
             Err(e) => println!("watch error: {:?}", e),
         }
     }
