@@ -224,6 +224,44 @@ fn start_daemon(daemonpath: &str) {
     }
 }
 
+fn stop_daemon(daemonpath: &str) {
+    if cfg!(target_os = "macos") {
+        let output = Command::new("id").arg("-u").output().unwrap();
+
+        let uid = String::from_utf8(output.stdout).unwrap().trim().to_string();
+
+        match Command::new("launchctl")
+            .args(["bootout", &format!("gui/{}", uid), &daemonpath])
+            .status()
+        {
+            Ok(_) => {
+                println!("Daemon Stopped Successfully");
+            }
+
+            Err(_) => {
+                println!("Error Stopping the daemon. Check if the daemon is running");
+                return;
+            }
+        }
+    } else if cfg!(target_os = "linux") {
+        match Command::new("systemctl")
+            .args(["--user", "stop", "docsearch.service"])
+            .status()
+        {
+            Ok(_) => {
+                println!("Daemon Stopped Successfully");
+            }
+
+            Err(_) => {
+                println!("Error stopping the daemon. Check if it is running");
+                return;
+            }
+        };
+    } else {
+        println!("No support for Windows. Get a better OS!!!");
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
@@ -361,25 +399,17 @@ async fn main() {
 
         Cmd::Stop => {
             let home = env::home_dir().unwrap().to_str().unwrap().to_string();
-            let plistpath = format!("{}/com.docsearch.plist", home);
-
-            let output = Command::new("id").arg("-u").output().unwrap();
-
-            let uid = String::from_utf8(output.stdout).unwrap().trim().to_string();
-
-            match Command::new("launchctl")
-                .args(["bootout", &format!("gui/{}", uid), &plistpath])
-                .status()
-            {
-                Ok(_) => {
-                    println!("Daemon Stopped Successfully");
+            let daemonpath = {
+                if cfg!(target_os = "linux") {
+                    format!("{}/docsearch.service", home)
+                } else if cfg!(target_os = "macos") {
+                    format!("{}/com.docsearch.plist", home)
+                } else {
+                    "".to_string()
                 }
+            };
 
-                Err(_) => {
-                    println!("Error Stopping the daemon. Check if the daemon is running");
-                    return;
-                }
-            }
+            stop_daemon(&daemonpath);
         }
     }
 }
