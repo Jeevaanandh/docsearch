@@ -1,4 +1,4 @@
-use notify::{Event, FsEventWatcher, RecursiveMode, Result, Watcher};
+use notify::{Event, RecommendedWatcher, RecursiveMode, Result, Watcher};
 use std::sync::{Arc, Mutex};
 use std::{path::Path, sync::mpsc};
 
@@ -63,7 +63,7 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     Ok(())
 }
 
-fn add_watch_listener(watcher: Arc<Mutex<FsEventWatcher>>) -> notify::Result<()> {
+fn add_watch_listener(watcher: Arc<Mutex<RecommendedWatcher>>) -> notify::Result<()> {
     let socket_path = "/tmp/server.sock";
 
     let _ = std::fs::remove_file(socket_path);
@@ -83,13 +83,16 @@ fn add_watch_listener(watcher: Arc<Mutex<FsEventWatcher>>) -> notify::Result<()>
 
     Ok(())
 }
-
 pub fn start_watch() -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
-    let mut watcher = notify::recommended_watcher(tx)?;
+
+    let watcher = notify::recommended_watcher(move |res| {
+        tx.send(res).unwrap();
+    })?;
+
     let watcher = Arc::new(Mutex::new(watcher));
 
-    let mut watcher_clone = watcher.clone();
+    let watcher_clone = watcher.clone();
 
     let watcher_handle = thread::spawn(move || {
         watcherfn(rx);
