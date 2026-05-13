@@ -73,7 +73,7 @@ enum Cmd {
 
     Init,
 
-    Sync,
+    Sync { path: Option<String> },
 
     Begin, //This is to start the watcher for the daemon
 
@@ -160,7 +160,7 @@ async fn main() {
             parse_directory(&pool).await;
         }
 
-        Cmd::Sync => {
+        Cmd::Sync { path } => {
             let pool = match db_init().await {
                 Ok(p) => p,
 
@@ -170,7 +170,15 @@ async fn main() {
                 }
             };
 
-            check_diff(&pool).await;
+            match path {
+                Some(p) => {
+                    check_diff(&pool, &p).await;
+                }
+
+                None => {
+                    check_diff(&pool, "").await;
+                }
+            }
         }
 
         Cmd::Add => {

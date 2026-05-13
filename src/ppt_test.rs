@@ -1,4 +1,4 @@
-use quick_xml::{Reader, events::Event};
+use quick_xml::{events::Event, Reader};
 
 use std::{
     fs::File,
@@ -79,7 +79,7 @@ pub async fn parse_ppt(
     file_path: &str,
     pool: &SqlitePool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let text = read_pptx(filename)?;
+    let text = read_pptx(file_path)?;
 
     let embeddings = get_embedding(&text)?;
 

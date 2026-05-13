@@ -4,6 +4,7 @@ use std::{path::Path, sync::mpsc};
 
 use std::io::{Read, Write};
 use std::os::unix::net::UnixListener;
+use std::process::Command;
 use std::thread;
 
 fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
@@ -11,11 +12,42 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     // below will be monitored for changes.
 
     // Block forever, printing out events as they come in
+    //
+    //
+    // So,
+    // poll the events Eg, if the time difference between current and last event <= 10ms, then both
+    // the events can be polled
+    //
+    // The type of event doesnt matter ----- look at the file name, check if it exists, if it does,
+    // embed, if it doesnt, delete it.
+    //
     for res in rx {
         match res {
             Ok(event) => match event.kind {
                 notify::EventKind::Create(_) => {
-                    println!("File Added: {:?}", event.paths[0]);
+                    // event.paths[0].parent() gives
+                    // the directory the file belongs
+                    // to.
+
+                    let path = match event.paths[0].parent() {
+                        Some(p) => p.to_str().unwrap().to_string(),
+
+                        None => {
+                            return Ok(());
+                        }
+                    };
+
+                    println!("Embedding Started for {:?}", event.paths[0]);
+
+                    let exe = std::env::current_exe().unwrap();
+
+                    let output = Command::new(exe).args(["sync", &path]).status().unwrap();
+
+                    if output.success() {
+                        println!("Embedding successful");
+                    } else {
+                        println!("Embeddings failed");
+                    }
                 }
 
                 _ => {}

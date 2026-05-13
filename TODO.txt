@@ -32,3 +32,10 @@ When init is run ----- A daemon shoud be created. This runs the parse_directory(
 
 
 
+IMP:
+Call the docsearch sync command everytime a valid change is detected ----- This can be done via a new process.
+Probably ---- modify the functionality of sync to take an optional argument.
+	      ie. if an argument is given (path) run sync on that specified path. Otherwise, do sync from the path where sync was    called from.
+
+
+
