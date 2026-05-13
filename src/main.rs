@@ -347,7 +347,9 @@ async fn main() {
                 }
             };
             match stream.write_all(current_dir.as_bytes()) {
-                Ok(r) => {}
+                Ok(r) => {
+                    println!("Watch Added Successfully");
+                }
                 Err(e) => {
                     println!("Error in writing to the stream");
                     return;
