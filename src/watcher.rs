@@ -1,6 +1,9 @@
-use notify::{Event, RecommendedWatcher, RecursiveMode, Result, Watcher};
+use notify::{Event, FsEventWatcher, RecommendedWatcher, RecursiveMode, Result, Watcher};
+use sqlx::SqlitePool;
 use std::sync::{Arc, Mutex};
 use std::{path::Path, sync::mpsc};
+
+use crate::repository::db::{add_watch, get_watch};
 
 use std::io::{Read, Write};
 use std::os::unix::net::UnixListener;
@@ -21,7 +24,6 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     //
     // The type of event doesnt matter ----- look at the file name, check if it exists, if it does,
     // embed, if it doesnt, delete it.
-    //
 
     let mut last_run = Instant::now();
     for res in rx {
@@ -69,7 +71,10 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
     Ok(())
 }
 
-fn add_watch_listener(watcher: Arc<Mutex<RecommendedWatcher>>) -> notify::Result<()> {
+async fn add_watch_listener(
+    watcher: Arc<Mutex<RecommendedWatcher>>,
+    pool: &SqlitePool,
+) -> notify::Result<()> {
     let socket_path = "/tmp/server.sock";
 
     let _ = std::fs::remove_file(socket_path);
@@ -80,6 +85,25 @@ fn add_watch_listener(watcher: Arc<Mutex<RecommendedWatcher>>) -> notify::Result
         let mut buffer = [0; 1024];
         let bytes_read = stream.read(&mut buffer)?;
         let message = String::from_utf8_lossy(&buffer[..bytes_read]);
+        let paths = get_watch(pool).await.unwrap();
+
+        let watch_path = message.trim().to_string();
+
+        if paths.contains(&watch_path) {
+            println!("The Current Directory Is Already Being Watched");
+            continue;
+        }
+
+        let pool2 = pool.clone();
+
+        match add_watch(&pool2, &watch_path).await {
+            Ok(_) => {}
+
+            Err(_) => {
+                println!("Error adding watch to the DB");
+            }
+        };
+
         let mut watcher = watcher.lock().unwrap();
 
         watcher.watch(Path::new(message.trim()), RecursiveMode::Recursive)?;
@@ -89,27 +113,45 @@ fn add_watch_listener(watcher: Arc<Mutex<RecommendedWatcher>>) -> notify::Result
 
     Ok(())
 }
-pub fn start_watch() -> Result<()> {
+
+fn watch_prev_paths(
+    watch_paths: &Vec<String>,
+    watcher: &mut RecommendedWatcher,
+    pool: &SqlitePool,
+) -> notify::Result<()> {
+    for path in watch_paths {
+        watcher.watch(Path::new(path), RecursiveMode::Recursive)?;
+    }
+
+    Ok(())
+}
+
+pub async fn start_watch(pool: &SqlitePool) -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
 
-    let watcher = notify::recommended_watcher(move |res| {
+    let mut watcher = notify::recommended_watcher(move |res| {
         tx.send(res).unwrap();
     })?;
+
+    let watch_paths = get_watch(pool).await.unwrap();
+
+    watch_prev_paths(&watch_paths, &mut watcher, pool);
 
     let watcher = Arc::new(Mutex::new(watcher));
 
     let watcher_clone = watcher.clone();
+    let p = pool.clone();
 
     let watcher_handle = thread::spawn(move || {
         watcherfn(rx);
     });
 
-    let listener_handle = thread::spawn(move || {
-        add_watch_listener(watcher_clone);
+    let listener_handle = tokio::spawn(async move {
+        add_watch_listener(watcher_clone, &p).await;
     });
 
     watcher_handle.join().unwrap();
-    listener_handle.join().unwrap();
+    listener_handle.await.unwrap();
 
     Ok(())
 }

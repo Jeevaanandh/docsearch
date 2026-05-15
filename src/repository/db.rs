@@ -65,6 +65,29 @@ pub async fn create_watch() -> Result<SqlitePool> {
     Ok(pool)
 }
 
+pub async fn get_watch(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT path FROM watch")
+        .fetch_all(pool)
+        .await?;
+
+    let mut paths = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        paths.push(row.0);
+    }
+
+    Ok(paths)
+}
+
+pub async fn add_watch(pool: &SqlitePool, path: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT OR REPLACE INTO watch (path) VALUES (?)")
+        .bind(path)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 fn vec_to_bytes(vec: &Vec<f32>) -> Vec<u8> {
     vec.iter().flat_map(|f| f.to_le_bytes()).collect()
 }

@@ -12,7 +12,7 @@ mod search;
 mod search_new;
 mod watcher;
 
-use crate::repository::db::db_init;
+use crate::repository::db::{create_watch, db_init};
 use app::run_app;
 use daemon::{get_daemon, start_daemon, stop_daemon};
 use file_test::{check_diff, parse_directory, parse_directory2};
@@ -195,7 +195,7 @@ async fn main() {
                 Ok(r) => r,
 
                 Err(e) => {
-                    println!("Error in creating the stream");
+                    println!("Error: {}", e);
                     return;
                 }
             };
@@ -204,7 +204,7 @@ async fn main() {
                     println!("Watch Added Successfully");
                 }
                 Err(e) => {
-                    println!("Error in writing to the stream");
+                    println!("Error: {}", e);
                     return;
                 }
             };
@@ -224,7 +224,22 @@ async fn main() {
         }
 
         Cmd::Begin => {
-            start_watch();
+            let pool = match create_watch().await {
+                Ok(p) => p,
+
+                Err(_) => {
+                    println!("Error in creating the watch table");
+                    return;
+                }
+            };
+
+            match start_watch(&pool).await {
+                Ok(_) => {}
+
+                Err(_) => {
+                    println!("Error in starting the daemon");
+                }
+            };
         }
 
         Cmd::Start => {

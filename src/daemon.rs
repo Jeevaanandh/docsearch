@@ -1,6 +1,8 @@
 use std::env;
 use std::process::Command;
 
+use sqlx::SqlitePool;
+
 pub fn get_daemon() -> String {
     let mut daemon_str;
 
