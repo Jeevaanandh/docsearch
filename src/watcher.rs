@@ -40,6 +40,12 @@ fn watcherfn(rx: mpsc::Receiver<Result<Event>>) -> Result<()> {
                         }
                     };
 
+                    let file = event.paths[0].to_str().unwrap().to_string();
+
+                    if !file.ends_with(".pptx") && !file.ends_with("pdf") {
+                        continue;
+                    }
+
                     println!("Embedding Started for {:?}", event.paths[0]);
 
                     let exe = std::env::current_exe().unwrap();

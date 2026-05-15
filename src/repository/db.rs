@@ -43,6 +43,28 @@ pub async fn db_init() -> Result<SqlitePool> {
     Ok(pool)
 }
 
+pub async fn create_watch() -> Result<SqlitePool> {
+    let home_dir = env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE")) // Windows fallback
+        .expect("Could not determine home directory");
+
+    let db_path = PathBuf::from(home_dir).join("test.db");
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path.display());
+
+    let pool = SqlitePool::connect(&connection_string).await?;
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS watch (
+        path TEXT PRIMARY KEY
+        )"#,
+    )
+    .execute(&pool)
+    .await?;
+
+    Ok(pool)
+}
+
 fn vec_to_bytes(vec: &Vec<f32>) -> Vec<u8> {
     vec.iter().flat_map(|f| f.to_le_bytes()).collect()
 }
