@@ -1,4 +1,4 @@
-use notify::{Event, FsEventWatcher, RecommendedWatcher, RecursiveMode, Result, Watcher};
+use notify::{Event, RecommendedWatcher, RecursiveMode, Result, Watcher};
 use sqlx::SqlitePool;
 use std::sync::{Arc, Mutex};
 use std::{path::Path, sync::mpsc};
