@@ -79,13 +79,13 @@ async fn add_watch_listener(
 
     let _ = std::fs::remove_file(socket_path);
     let listener = UnixListener::bind(socket_path)?;
+    let mut paths = get_watch(pool).await.unwrap();
 
     for stream in listener.incoming() {
         let mut stream = stream?;
         let mut buffer = [0; 1024];
         let bytes_read = stream.read(&mut buffer)?;
         let message = String::from_utf8_lossy(&buffer[..bytes_read]);
-        let paths = get_watch(pool).await.unwrap();
 
         let watch_path = message.trim().to_string();
 
@@ -97,7 +97,9 @@ async fn add_watch_listener(
         let pool2 = pool.clone();
 
         match add_watch(&pool2, &watch_path).await {
-            Ok(_) => {}
+            Ok(_) => {
+                paths.push(watch_path);
+            }
 
             Err(_) => {
                 println!("Error adding watch to the DB");
