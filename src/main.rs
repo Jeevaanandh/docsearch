@@ -12,7 +12,7 @@ mod search;
 mod search_new;
 mod watcher;
 
-use crate::repository::db::{create_watch, db_init};
+use crate::repository::db::{create_watch, db_init, get_watch};
 use app::run_app;
 use daemon::{get_daemon, start_daemon, stop_daemon};
 use file_test::{check_diff, parse_directory, parse_directory2};
@@ -89,6 +89,8 @@ enum Cmd {
     Add, //This is to add a directory to the watchlist,
 
     Stop,
+
+    Status,
 }
 
 fn setup_app(app: &mut App) -> Result<(), io::Error> {
@@ -280,6 +282,38 @@ async fn main() {
             };
 
             stop_daemon(&daemonpath);
+        }
+
+        Cmd::Status => {
+            let pool = match create_watch().await {
+                Ok(p) => p,
+
+                Err(_) => {
+                    println!("Error in connecting to the DB");
+
+                    return;
+                }
+            };
+
+            let watch_paths = get_watch(&pool).await.unwrap();
+
+            match UnixStream::connect("/tmp/server.sock") {
+                Ok(_) => {
+                    println!("Docsearch is currently running\n");
+                    if watch_paths.is_empty() {
+                        println!("No directories are being watched");
+                    } else {
+                        println!("Directories being watched:");
+                        println!("{:?}", watch_paths);
+                    }
+                }
+
+                Err(_) => {
+                    println!("Docsearch is currently not running");
+                    println!("Run: \"docsearch start\" to watch directories for changes");
+                    return;
+                }
+            };
         }
     }
 }

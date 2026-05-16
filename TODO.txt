@@ -51,10 +51,19 @@ IMPROVEMENTS:
 1. When docsearch is run for the very first time ----- make sure the model is downloaded first before the embeddings are being done.
 
 2. Right now, the files are processed in batches of 5 ----- this may overload some CPU's ----- try to find some way you can get the CPU info. and do the multiprocessing based on that
+
+3. Add a status command to check if the daemon is running or not. ------ Use the pipe to check this.
+
+
+
+
+
+
 =======
 6. The paths added to the watchlist should be added to the DB so, that when docsearch strat is run, paths added previously to the watchlist can be watched automatically.
 
 Also, add a command to view all the paths being watched.
+
 
 
 
@@ -65,4 +74,4 @@ Probably ---- modify the functionality of sync to take an optional argument.
 
 
 
->>>>>>> watcher
+
