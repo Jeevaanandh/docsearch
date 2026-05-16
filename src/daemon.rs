@@ -1,6 +1,7 @@
 use std::env;
 use std::process::Command;
 
+use colored::Colorize;
 use sqlx::SqlitePool;
 
 pub fn get_daemon() -> String {
@@ -92,7 +93,7 @@ pub fn start_daemon(daemonpath: &str) {
             }
 
             Err(_) => {
-                println!("Error starting the daemon");
+                println!("{}", "Error starting the daemon".red());
                 return;
             }
         }
@@ -108,9 +109,12 @@ pub fn start_daemon(daemonpath: &str) {
             .status()
             .expect("Failed to enable service");
 
-        println!("Daemon Started Successfully");
+        println!("{}", "Daemon Started Successfully".bold().bold());
     } else {
-        println!("No Support for Windows. Get a better OS!!!");
+        println!(
+            "{}",
+            "No Support for Windows. Get a better OS!!!".bold().blink()
+        );
     }
 }
 

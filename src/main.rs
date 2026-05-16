@@ -14,6 +14,7 @@ mod watcher;
 
 use crate::repository::db::{create_watch, db_init, get_watch};
 use app::run_app;
+use colored::*;
 use daemon::{get_daemon, start_daemon, stop_daemon};
 use file_test::{check_diff, parse_directory, parse_directory2};
 
@@ -299,18 +300,26 @@ async fn main() {
 
             match UnixStream::connect("/tmp/server.sock") {
                 Ok(_) => {
-                    println!("Docsearch is currently running\n");
+                    println!("\n{}\n", "Docsearch is currently running".bold().blink());
                     if watch_paths.is_empty() {
                         println!("No directories are being watched");
                     } else {
-                        println!("Directories being watched:");
-                        println!("{:?}", watch_paths);
+                        println!("{}", "Directories being watched:".white().bold());
+
+                        for path in watch_paths {
+                            println!("\t{} ", path.white());
+                        }
+
+                        println!();
                     }
                 }
 
                 Err(_) => {
-                    println!("Docsearch is currently not running");
-                    println!("Run: \"docsearch start\" to watch directories for changes");
+                    println!("\n{}\n", "Docsearch is currently not running".bold());
+                    println!(
+                        "{}\n",
+                        "Run: \"docsearch start\" to watch directories for changes".yellow()
+                    );
                     return;
                 }
             };
